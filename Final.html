@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIm Focus</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#FDF6EE;--bg2:#F3EAE0;--panel:#FFFFFF;
+  --text:#2C1F35;--muted:#8A7A93;
+  --primary:#7C4D8A;--primary2:#A673B4;--accent:#E8845C;
+  --border:#E0D4DC;--xp:#F0E4D0;
+  --green:#5A9E6F;--red:#C85C5C;--amber:#D4933A;
+  --shadow:0 8px 32px rgba(44,31,53,.10);--shadow-sm:0 2px 12px rgba(44,31,53,.07);
+}
+body.dark{
+  --bg:#1A1420;--bg2:#221929;--panel:#2A2033;
+  --text:#F0E8F5;--muted:#9E8EAA;
+  --primary:#A673B4;--primary2:#C49DD0;
+  --border:#3D2E4A;--xp:#3A2E45;
+  --shadow:0 8px 32px rgba(0,0,0,.35);--shadow-sm:0 2px 12px rgba(0,0,0,.22);
+}
+
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s}
+.hidden{display:none!important}
+h1,h2,h3{font-family:'DM Serif Display',serif}
+.muted{color:var(--muted);font-size:13px}
+.msg{font-size:13px;min-height:18px;margin-top:8px}
+.msg.err{color:var(--red)}.msg.ok{color:var(--green)}
+
+input,select{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border .2s;margin-bottom:12px}
+input:focus,select:focus{border-color:var(--primary)}
+select option{background:var(--panel)}
+
+button{font-family:'DM Sans',sans-serif;background:var(--primary);color:#fff;border:none;padding:11px 20px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;transition:background .2s,transform .1s}
+button:hover{background:var(--primary2)}
+button:active{transform:scale(.97)}
+.btn-sec{background:transparent;color:var(--primary);border:1.5px solid var(--primary)}
+.btn-sec:hover{background:var(--primary);color:#fff}
+.btn-acc{background:var(--accent)}.btn-acc:hover{background:#d9704a}
+.btn-sm{padding:7px 14px;font-size:13px}
+.btn-del{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+.btn-del:hover{background:var(--red);color:#fff}
+
+/* LOADING */
+#loadingOverlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:9999}
+#loadingOverlay h2{font-size:28px;color:var(--primary)}
+#loadingOverlay p{color:var(--muted)}
+.spinner{width:40px;height:40px;border:3px solid var(--xp);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* LOGIN */
+#loginRoot{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 30% 20%,rgba(124,77,138,.18) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(232,132,92,.12) 0%,transparent 55%),var(--bg)}
+.login-wrap{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;max-width:1000px;width:100%;align-items:center}
+.login-brand h1{font-size:52px;color:var(--primary);line-height:1.1;margin-bottom:12px}
+.login-brand h1 em{color:var(--accent);font-style:italic}
+.login-brand p{font-size:16px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+.brand-chips{display:flex;flex-wrap:wrap;gap:10px}
+.brand-chips span{background:rgba(124,77,138,.1);color:var(--primary);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:500;border:1px solid rgba(124,77,138,.2)}
+.login-card{background:var(--panel);padding:36px;border-radius:24px;box-shadow:var(--shadow)}
+.login-card h2{color:var(--primary);margin-bottom:20px;font-size:24px}
+.login-tabs{display:flex;gap:8px;margin-bottom:24px}
+.login-tab{flex:1;padding:10px;border-radius:10px;background:var(--bg2);color:var(--muted);border:none;font-weight:500;font-size:14px}
+.login-tab.active{background:var(--primary);color:#fff}
+
+/* APP SHELL */
+#appRoot{display:flex;flex-direction:column;min-height:100vh}
+.topbar-shell{height:52px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm)}
+.app-logo{font-family:'DM Serif Display',serif;font-size:20px;color:var(--primary)}
+.tb-left{display:flex;align-items:center;gap:14px}
+.tb-user{font-size:13px;color:var(--muted)}
+.tb-right{display:flex;gap:8px;align-items:center}
+.body-wrap{display:flex;min-height:calc(100vh - 52px)}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--panel);border-right:1px solid var(--border);padding:16px 10px;flex-shrink:0;display:flex;flex-direction:column;gap:3px}
+.nav-btn{width:100%;text-align:left;background:transparent;color:var(--text);padding:11px 14px;border-radius:12px;border:none;font-size:14px;font-weight:400;display:flex;align-items:center;gap:10px;transition:background .15s,color .15s}
+.nav-btn:hover{background:var(--bg2);color:var(--primary)}
+.nav-btn.active{background:rgba(124,77,138,.12);color:var(--primary);font-weight:600}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+
+/* MAIN */
+.main{flex:1;padding:28px;overflow-y:auto}
+.page-hdr{margin-bottom:22px}
+.page-hdr h2{font-size:28px;color:var(--primary);margin-bottom:3px}
+
+/* CARDS */
+.card{background:var(--panel);border-radius:18px;padding:22px;box-shadow:var(--shadow-sm)}
+.card h3{font-size:16px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.span2{grid-column:span 2}
+
+/* STAT CARDS */
+.stat-card{background:var(--panel);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow-sm);border-left:4px solid var(--primary)}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-val{font-size:28px;font-weight:700;color:var(--primary);font-family:'DM Serif Display',serif}
+
+/* XP BAR */
+.xp-bg{height:10px;background:var(--xp);border-radius:99px;overflow:hidden;margin:8px 0}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:99px;transition:width .4s}
+.xp-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+
+/* TASK CARDS */
+.task-card{background:var(--panel);border-radius:14px;padding:15px 18px;box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:space-between;gap:14px;border-left:4px solid transparent;transition:opacity .2s}
+.task-card.prio-High{border-color:var(--red)}.task-card.prio-Medium{border-color:var(--amber)}.task-card.prio-Low{border-color:var(--green)}
+.task-card.done{opacity:.6;border-color:var(--green)!important}
+.task-info h4{font-size:14px;margin-bottom:4px}
+.task-meta2{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.task-actions{display:flex;gap:8px;flex-shrink:0}
+.bp{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:500}
+.bp-H{background:rgba(200,92,92,.15);color:var(--red)}.bp-M{background:rgba(212,147,58,.15);color:var(--amber)}.bp-L{background:rgba(90,158,111,.15);color:var(--green)}.bp-xp{background:var(--xp);color:var(--primary)}
+
+/* FILTERS */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.fpill{padding:7px 16px;border-radius:999px;background:var(--bg2);color:var(--muted);border:1px solid var(--border);font-size:13px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.fpill.active,.fpill:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+/* TIMER */
+.timer-ring{width:230px;height:230px;border-radius:50%;margin:0 auto 20px;background:conic-gradient(var(--primary) var(--prog,0%),var(--xp) 0%);display:flex;align-items:center;justify-content:center;position:relative}
+.timer-ring::before{content:'';position:absolute;inset:16px;border-radius:50%;background:var(--panel)}
+.timer-digits{font-size:44px;font-weight:700;color:var(--primary);font-family:'DM Serif Display',serif;position:relative;z-index:1}
+
+/* BADGES */
+.badge-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.eb{background:linear-gradient(135deg,rgba(124,77,138,.12),rgba(232,132,92,.08));border:1px solid rgba(124,77,138,.22);color:var(--text);padding:8px 15px;border-radius:999px;font-size:13px;font-weight:500}
+
+/* EXPORT BAR */
+.export-bar{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--bg2);border-radius:14px;margin-bottom:20px;border:1px solid var(--border)}
+.export-bar p{flex:1;font-size:13px;color:var(--muted);margin:0}
+
+/* PAGES */
+.app-page{display:none}.app-page.active{display:block}
+
+@media(max-width:860px){
+  .login-wrap,.grid2,.grid4{grid-template-columns:1fr}
+  .login-brand{display:none}.span2{grid-column:span 1}
+  .body-wrap{flex-direction:column}
+  .sidebar{width:100%;flex-direction:row;flex-wrap:wrap;padding:10px}
+  .nav-btn{flex:0 0 auto;padding:8px 12px}
+  .main{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <h2>AIm Focus</h2>
+  <p>Loading database…</p>
+</div>
+
+<!-- LOGIN -->
+<div id="loginRoot" class="hidden">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <h1>AIm<br><em>Focus</em></h1>
+      <p>Your AI-powered productivity companion. Tasks, timers, XP, and insights — all in one place.</p>
+      <div class="brand-chips">
+        <span>📋 Task Management</span><span>⏱ Focus Sessions</span>
+        <span>⭐ XP &amp; Levels</span><span>🤖 AI Insights</span>
+        <span>💾 Real SQLite DB</span>
+      </div>
+    </div>
+    <div class="login-card">
+      <div class="login-tabs">
+        <button class="login-tab active" id="tabLogin"    onclick="switchTab('login')">Sign In</button>
+        <button class="login-tab"        id="tabRegister" onclick="switchTab('register')">Register</button>
+      </div>
+      <div id="formLogin">
+        <input type="text"     id="lUser" placeholder="Username">
+        <input type="password" id="lPass" placeholder="Password">
+        <button onclick="login()" style="width:100%">Sign In</button>
+        <p class="msg err" id="loginMsg"></p>
+      </div>
+      <div id="formRegister" class="hidden">
+        <input type="text"     id="rUser"  placeholder="Username">
+        <input type="email"    id="rEmail" placeholder="Email">
+        <input type="password" id="rPass"  placeholder="Password">
+        <button onclick="register()" style="width:100%">Create Account</button>
+        <p class="msg" id="regMsg"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appRoot" class="hidden">
+  <header class="topbar-shell">
+    <div class="tb-left">
+      <span class="app-logo">AIm Focus</span>
+      <span class="tb-user" id="tbUser"></span>
+    </div>
+    <div class="tb-right">
+      <span style="font-size:13px;color:var(--muted)" id="tbXP"></span>
+      <button class="btn-sec btn-sm" onclick="toggleTheme()">🌙 Theme</button>
+      <button class="btn-sm" style="background:var(--bg2);color:var(--text);border:1px solid var(--border)" onclick="exportDB()">💾 Export DB</button>
+      <button class="btn-del btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <div class="body-wrap">
+    <nav class="sidebar">
+      <button class="nav-btn active" data-page="dashboard" onclick="nav('dashboard')"><span class="nav-icon">🏠</span>Dashboard</button>
+      <button class="nav-btn" data-page="tasks"    onclick="nav('tasks')"><span class="nav-icon">📋</span>Tasks</button>
+      <button class="nav-btn" data-page="focus"    onclick="nav('focus')"><span class="nav-icon">⏱</span>Focus</button>
+      <button class="nav-btn" data-page="progress" onclick="nav('progress')"><span class="nav-icon">📈</span>Progress</button>
+      <button class="nav-btn" data-page="ai"       onclick="nav('ai')"><span class="nav-icon">🤖</span>AI Insights</button>
+      <button class="nav-btn" data-page="summary"  onclick="nav('summary')"><span class="nav-icon">📅</span>Summary</button>
+    </nav>
+
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <div id="page-dashboard" class="app-page active">
+        <div class="page-hdr">
+          <h2 id="dashWelcome">Welcome back</h2>
+          <p class="muted">Stay consistent and keep building momentum.</p>
+        </div>
+        <div class="export-bar">
+          <p>Data is stored in a real SQLite database in your browser. Click <strong>Export DB</strong> (top right) anytime to download the <code>.db</code> file and open it in <strong>DB Browser for SQLite</strong>.</p>
+        </div>
+        <div class="grid4" style="margin-bottom:18px">
+          <div class="stat-card"><div class="stat-label">Total XP</div><div class="stat-val" id="d-xp">0</div></div>
+          <div class="stat-card"><div class="stat-label">Level</div><div class="stat-val" id="d-level">1</div></div>
+          <div class="stat-card"><div class="stat-label">Tasks Done</div><div class="stat-val" id="d-tasks">0</div></div>
+          <div class="stat-card"><div class="stat-label">Streak</div><div class="stat-val" id="d-streak">0</div></div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h3>Pending Tasks</h3>
+            <ul id="dashTaskList" style="padding-left:18px;line-height:2.2;font-size:14px"></ul>
+            <button class="btn-sec btn-sm" style="margin-top:12px" onclick="nav('tasks')">Manage Tasks →</button>
+          </div>
+          <div class="card">
+            <h3>XP Progress</h3>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Level <strong id="xpLevel">1</strong></div>
+            <div class="xp-bg"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+            <div class="xp-meta"><span id="xpCur">0 XP</span><span id="xpNext">100 XP to next level</span></div>
+            <p style="margin-top:14px;font-size:13px;color:var(--muted)" id="dashTip"></p>
+          </div>
+          <div class="card">
+            <h3>Weekly Snapshot</h3>
+            <div class="grid4" style="margin-top:8px;gap:10px">
+              <div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--primary)" id="wTasks">0</div><div class="muted">Tasks</div></div>
+              <div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--primary)" id="wSessions">0</div><div class="muted">Sessions</div></div>
+              <div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--primary)" id="wXP">0</div><div class="muted">XP</div></div>
+              <div style="text-align:center"><div style="font-size:24px;font-weight:700;color:var(--accent)" id="wRate">0%</div><div class="muted">Rate</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Quick Start</h3>
+            <p style="font-size:14px;line-height:1.8;color:var(--muted);margin-bottom:14px">Complete a 25-min focus session to earn <strong style="color:var(--primary)">+50 XP</strong>. Finish high-priority tasks for <strong style="color:var(--accent)">+40 XP</strong> each.</p>
+            <button class="btn-acc" onclick="nav('focus')">Start Focus Session</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASKS -->
+      <div id="page-tasks" class="app-page">
+        <div class="page-hdr"><h2>Tasks</h2><p class="muted">Add tasks, complete them, earn XP.</p></div>
+        <div class="card" style="margin-bottom:18px">
+          <h3>Add New Task</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:10px">
+            <div style="flex:2;min-width:160px"><input type="text" id="tTitle" placeholder="Task title" style="margin:0"></div>
+            <div style="flex:1;min-width:120px"><select id="tPrio" style="margin:0"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select></div>
+            <div style="flex:1;min-width:120px"><input type="date" id="tDeadline" style="margin:0"></div>
+            <button onclick="addTask()" style="flex-shrink:0;margin-bottom:0">Add Task</button>
+          </div>
+          <p class="msg err" id="taskMsg"></p>
+        </div>
+        <div class="filter-row">
+          <span class="fpill active" onclick="setFilter(this,'All')">All</span>
+          <span class="fpill" onclick="setFilter(this,'Pending')">Pending</span>
+          <span class="fpill" onclick="setFilter(this,'Completed')">Completed</span>
+          <span class="fpill" onclick="setFilter(this,'High')">🔴 High</span>
+          <span class="fpill" onclick="setFilter(this,'Medium')">🟡 Medium</span>
+          <span class="fpill" onclick="setFilter(this,'Low')">🟢 Low</span>
+        </div>
+        <div id="taskListArea" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- FOCUS -->
+      <div id="page-focus" class="app-page">
+        <div class="page-hdr"><h2>Focus Session</h2><p class="muted">Deep work earns XP and builds your streak.</p></div>
+        <div class="grid2">
+          <div class="card" style="text-align:center">
+            <div class="timer-ring" id="timerRing">
+              <div class="timer-digits" id="timerDisplay">25:00</div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap">
+              <button class="btn-sec btn-sm" onclick="setTimer(15)">15 min</button>
+              <button class="btn-sec btn-sm" onclick="setTimer(25)">25 min</button>
+              <button class="btn-sec btn-sm" onclick="setTimer(50)">50 min</button>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:center">
+              <button onclick="startTimer()">▶ Start</button>
+              <button class="btn-sec" onclick="pauseTimer()">⏸ Pause</button>
+              <button class="btn-sec" onclick="resetTimer()">↺ Reset</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="card">
+              <h3>Session Info</h3>
+              <div style="font-size:14px;line-height:2.2">
+                Duration: <strong id="fLen">25 min</strong><br>
+                Reward: <strong style="color:var(--accent)">+50 XP</strong><br>
+                Your Level: <strong id="fLevel">1</strong><br>
+                Sessions Done: <strong id="fSessions">0</strong>
+              </div>
+            </div>
+            <div class="card">
+              <h3>💡 Focus Tip</h3>
+              <p id="focusTip" style="font-size:14px;line-height:1.8;color:var(--muted);margin-bottom:12px"></p>
+              <button class="btn-sec btn-sm" onclick="newTip()">New Tip</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROGRESS -->
+      <div id="page-progress" class="app-page">
+        <div class="page-hdr"><h2>Progress</h2><p class="muted">Your XP, stats, and earned badges.</p></div>
+        <div class="grid2">
+          <div class="card">
+            <h3>Level Progress</h3>
+            <div style="font-size:38px;font-weight:700;color:var(--primary);font-family:'DM Serif Display',serif;margin:8px 0" id="pLevel">1</div>
+            <div class="xp-bg"><div class="xp-fill" id="pXpFill" style="width:0%"></div></div>
+            <div class="xp-meta"><span id="pXpCur">0 XP</span><span>/ 100 XP per level</span></div>
+            <div style="margin-top:14px;font-size:14px;line-height:2.2">Total XP: <strong id="pXP">0</strong><br>Streak: <strong id="pStreak">0</strong> days</div>
+          </div>
+          <div class="card">
+            <h3>Stats</h3>
+            <div style="font-size:14px;line-height:2.4">
+              ✅ Tasks Completed: <strong id="pTasks">0</strong><br>
+              ⏳ Pending: <strong id="pPending">0</strong><br>
+              ⏱ Focus Sessions: <strong id="pSessions">0</strong><br>
+              🔥 Streak: <strong id="pStreak2">0</strong> days
+            </div>
+          </div>
+          <div class="card span2">
+            <h3>Badges Earned</h3>
+            <div class="badge-grid" id="badgeGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI INSIGHTS -->
+      <div id="page-ai" class="app-page">
+        <div class="page-hdr"><h2>AI Insights</h2><p class="muted">Smart suggestions based on your activity.</p></div>
+        <div class="grid2">
+          <div class="card">
+            <h3>Productivity Suggestion</h3>
+            <p id="aiSug" style="font-size:14px;line-height:1.8;color:var(--muted);margin-bottom:14px"></p>
+            <button onclick="genSug()">New Suggestion</button>
+          </div>
+          <div class="card">
+            <h3>Motivation Boost</h3>
+            <p id="aiMot" style="font-size:14px;line-height:1.8;color:var(--muted);margin-bottom:14px"></p>
+            <button class="btn-sec" onclick="genMot()">New Message</button>
+          </div>
+          <div class="card span2">
+            <h3>AI Reflection</h3>
+            <p id="aiRef" style="font-size:14px;line-height:1.8;color:var(--muted);margin-bottom:14px"></p>
+            <button onclick="genRef()">Refresh</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div id="page-summary" class="app-page">
+        <div class="page-hdr"><h2>Weekly Summary</h2><p class="muted">Your productivity overview.</p></div>
+        <div class="grid2">
+          <div class="card">
+            <h3>Weekly Totals</h3>
+            <div style="font-size:14px;line-height:2.4">
+              Tasks Completed: <strong id="sTasks">0</strong><br>
+              Focus Sessions: <strong id="sSessions">0</strong><br>
+              XP Earned: <strong id="sXP">0</strong>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Performance</h3>
+            <p id="sBestDay" style="font-size:14px;line-height:2.2"></p>
+            <p id="sScore"   style="font-size:14px;line-height:2.2"></p>
+          </div>
+          <div class="card span2">
+            <h3>AI Weekly Summary</h3>
+            <p id="sAi" style="font-size:14px;line-height:1.9;color:var(--muted)"></p>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FIREBASE SDK  (v9 compat build — works on GitHub Pages)
+════════════════════════════════════════════════════════ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  STEP 1 ► PASTE YOUR FIREBASE CONFIG HERE
+//  Get it from: Firebase Console → Project Settings → Your Apps
+// ══════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyB9QSvjSGtpSv5t18EwDp9NX-Dk2YwAqbw",
+  authDomain:        "aim-focus-77974.firebaseapp.com",
+  databaseURL:       "https://console.firebase.google.com/u/0/project/aim-focus-77974/database/aim-focus-77974-default-rtdb/data/~2F",
+  projectId:         "aim-focus-77974",
+  storageBucket:     "aim-focus-77974.firebasestorage.app",
+  messagingSenderId: "159724049487",
+  appId:             "1:159724049487:web:c64f450bb5de306dbf863a",
+  measurementId:     "G-LSFVJZWTSS"
+};
+
+// ══════════════════════════════════════════════════════
+//  FIREBASE INIT
+// ══════════════════════════════════════════════════════
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const rtdb  = firebase.database();
+
+// ══════════════════════════════════════════════════════
+//  APP STATE
+//  CU  = current user profile object (from Firebase)
+//  UID = Firebase Auth uid (stored in localStorage for
+//        session persistence — no actual data stored there)
+// ══════════════════════════════════════════════════════
+let CU      = null;   // live in-memory user profile
+let UID     = null;   // firebase uid
+let filter  = 'All';
+let timerH  = null;
+let timerBase = 25;
+let timerSecs = 25 * 60;
+
+// Active real-time listeners — unsubscribed on logout
+let unsubProfile  = null;
+let unsubTasks    = null;
+let unsubSessions = null;
+
+const TIPS = ['Begin with the most difficult task while energy is highest.','Silence notifications before starting your focus session.','Set one clear goal before pressing Start.','Keep only the tools you need open during the session.','Use a short break after each session to reset attention.'];
+const SUGS = ['Try finishing your highest-priority task in your next focus block.','Group similar tasks to reduce context switching.','Start with the most difficult task while energy is high.','Break large tasks into smaller steps to build momentum.','Use your next focus session for one task only.'];
+const MOTS = ['You are making progress one focused session at a time.','Consistency beats intensity when building productive habits.','Your effort today builds your success tomorrow.','Stay locked in — momentum grows with every completed task.','Every task you finish moves you closer to your goals.'];
+const rand = a => a[Math.floor(Math.random() * a.length)];
+
+// ══════════════════════════════════════════════════════
+//  FIREBASE DATABASE HELPERS
+//  Paths:
+//    users/{uid}/profile   → { email, username, xp, level, streak }
+//    users/{uid}/tasks     → { taskId: { title, priority, ... } }
+//    users/{uid}/sessions  → { sessionId: { duration, xp_reward, ... } }
+// ══════════════════════════════════════════════════════
+function userRef(path='')  { return rtdb.ref(`users/${UID}${path ? '/'+path : ''}`); }
+function profileRef()      { return userRef('profile'); }
+function tasksRef()        { return userRef('tasks'); }
+function sessionsRef()     { return userRef('sessions'); }
+
+// ── Write profile ─────────────────────────────────────
+async function saveProfile(data) {
+  await profileRef().update(data);
+}
+
+// ── Create new user profile in DB if it doesn't exist ─
+async function ensureProfile(email) {
+  const snap = await profileRef().once('value');
+  if (!snap.exists()) {
+    const username = email.split('@')[0];
+    await profileRef().set({
+      email,
+      username,
+      xp: 0,
+      level: 1,
+      streak: 0,
+      createdAt: new Date().toISOString()
+    });
+  }
+}
+
+// ── Add task ──────────────────────────────────────────
+async function fbAddTask({ title, priority, deadline, xp_reward }) {
+  const key = tasksRef().push().key;
+  await tasksRef().child(key).set({
+    id: key,
+    title,
+    priority,
+    deadline: deadline || '',
+    status: 'pending',
+    xp_reward,
+    createdAt: new Date().toISOString()
+  });
+}
+
+// ── Complete task (updates task + awards XP) ──────────
+async function fbCompleteTask(taskId) {
+  const snap = await tasksRef().child(taskId).once('value');
+  const task = snap.val();
+  if (!task || task.status === 'completed') return;
+  await tasksRef().child(taskId).update({ status: 'completed' });
+  const newXP     = (CU.xp || 0) + task.xp_reward;
+  const newLevel  = Math.floor(newXP / 100) + 1;
+  const newStreak = (CU.streak || 0) + 1;
+  await saveProfile({ xp: newXP, level: newLevel, streak: newStreak });
+}
+
+// ── Delete task ───────────────────────────────────────
+async function fbDeleteTask(taskId) {
+  await tasksRef().child(taskId).remove();
+}
+
+// ── Add focus session (awards XP) ────────────────────
+async function fbAddSession(durationMinutes) {
+  const key = sessionsRef().push().key;
+  const xp_reward = 50;
+  await sessionsRef().child(key).set({
+    id: key,
+    duration_minutes: durationMinutes,
+    xp_reward,
+    completedAt: new Date().toISOString()
+  });
+  const newXP    = (CU.xp || 0) + xp_reward;
+  const newLevel = Math.floor(newXP / 100) + 1;
+  await saveProfile({ xp: newXP, level: newLevel });
+}
+
+// ── Save progress (used on logout / beforeunload) ─────
+async function saveProgress() {
+  if (!UID || !CU) return;
+  await saveProfile({ lastSaved: new Date().toISOString() });
+}
+
+// ══════════════════════════════════════════════════════
+//  REAL-TIME LISTENERS
+//  onValue fires immediately with current data, then on
+//  every change → UI always reflects Firebase state.
+// ══════════════════════════════════════════════════════
+function attachListeners() {
+  // Profile listener
+  unsubProfile = profileRef().on('value', snap => {
+    if (!snap.exists()) return;
+    CU = snap.val();
+    // Re-render whichever page is currently active
+    const activePage = document.querySelector('.app-page.active');
+    if (activePage) refreshPage(activePage.id.replace('page-',''));
+    // Always update topbar
+    updateTopbar();
+  });
+
+  // Tasks listener
+  unsubTasks = tasksRef().on('value', () => {
+    renderTasks();
+    refreshDash();
+  });
+
+  // Sessions listener
+  unsubSessions = sessionsRef().on('value', () => {
+    refreshFocus();
+    refreshProgress();
+    refreshSummary();
+  });
+}
+
+function detachListeners() {
+  if (unsubProfile)  { profileRef().off('value',  unsubProfile);  unsubProfile  = null; }
+  if (unsubTasks)    { tasksRef().off('value',     unsubTasks);    unsubTasks    = null; }
+  if (unsubSessions) { sessionsRef().off('value',  unsubSessions); unsubSessions = null; }
+}
+
+// ══════════════════════════════════════════════════════
+//  AUTH — Gmail-only restriction
+// ══════════════════════════════════════════════════════
+function isGmail(email) { return email.trim().toLowerCase().endsWith('@gmail.com'); }
+
+function switchTab(t) {
+  $('formLogin').classList.toggle('hidden', t !== 'login');
+  $('formRegister').classList.toggle('hidden', t !== 'register');
+  $('tabLogin').classList.toggle('active', t === 'login');
+  $('tabRegister').classList.toggle('active', t === 'register');
+}
+
+async function login() {
+  // NOTE: The existing HTML uses id="lUser" for the first input.
+  // For Firebase Auth we treat that field as the email address.
+  const email = $('lUser').value.trim();
+  const pass  = $('lPass').value.trim();
+  const m     = $('loginMsg');
+  m.textContent = '';
+
+  if (!email || !pass) { m.textContent = 'Enter your Gmail and password.'; return; }
+  if (!isGmail(email)) { m.textContent = 'Only @gmail.com accounts are allowed.'; return; }
+
+  try {
+    showLoading(true);
+    await auth.signInWithEmailAndPassword(email, pass);
+    // onAuthStateChanged handles the rest
+  } catch(e) {
+    showLoading(false);
+    m.textContent = friendlyAuthError(e.code);
+  }
+}
+
+async function register() {
+  const username = $('rUser').value.trim();
+  const email    = $('rEmail').value.trim();
+  const pass     = $('rPass').value.trim();
+  const m        = $('regMsg');
+  m.className = 'msg';
+
+  if (!username || !email || !pass) { m.classList.add('err'); m.textContent = 'All fields required.'; return; }
+  if (!isGmail(email))              { m.classList.add('err'); m.textContent = 'Only @gmail.com accounts are allowed.'; return; }
+  if (pass.length < 6)              { m.classList.add('err'); m.textContent = 'Password must be at least 6 characters.'; return; }
+
+  try {
+    showLoading(true);
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    UID = cred.user.uid;
+    // Store chosen username in profile
+    await ensureProfile(email);
+    await profileRef().update({ username });
+    m.classList.add('ok');
+    m.textContent = 'Account created! Signing you in…';
+    // onAuthStateChanged will fire and load the app
+  } catch(e) {
+    showLoading(false);
+    m.classList.add('err');
+    m.textContent = friendlyAuthError(e.code);
+  }
+}
+
+async function logout() {
+  clearInterval(timerH); timerH = null;
+  await saveProgress();
+  detachListeners();
+  await auth.signOut();
+  localStorage.removeItem('aimfocus_uid');
+  CU = null; UID = null;
+  $('appRoot').classList.add('hidden');
+  $('loginRoot').classList.remove('hidden');
+  showLoading(false);
+}
+
+function friendlyAuthError(code) {
+  const map = {
+    'auth/user-not-found':       'No account found with this email.',
+    'auth/wrong-password':       'Incorrect password.',
+    'auth/email-already-in-use': 'This email is already registered.',
+    'auth/invalid-email':        'Invalid email address.',
+    'auth/weak-password':        'Password is too weak (min 6 chars).',
+    'auth/too-many-requests':    'Too many attempts. Try again later.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+// ══════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════
+function nav(page) {
+  document.querySelectorAll('.app-page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-btn[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  refreshPage(page);
+}
+
+function showApp() {
+  $('loginRoot').classList.add('hidden');
+  $('appRoot').classList.remove('hidden');
+  nav('dashboard');
+}
+
+// ══════════════════════════════════════════════════════
+//  TASKS
+// ══════════════════════════════════════════════════════
+function xpFor(p) { return p === 'High' ? 40 : p === 'Medium' ? 25 : 15; }
+
+async function addTask() {
+  const t = $('tTitle').value.trim(), p = $('tPrio').value, d = $('tDeadline').value, m = $('taskMsg');
+  if (!t) { m.textContent = 'Enter a task title.'; return; }
+  m.textContent = '';
+  await fbAddTask({ title: t, priority: p, deadline: d, xp_reward: xpFor(p) });
+  $('tTitle').value = '';
+  // renderTasks() will be called automatically by the tasks listener
+}
+
+function setFilter(el, f) {
+  filter = f;
+  document.querySelectorAll('.fpill').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  renderTasks();
+}
+
+async function renderTasks() {
+  const area = $('taskListArea'); if (!area || !UID) return;
+  const snap = await tasksRef().once('value');
+  let tasks = [];
+  snap.forEach(c => tasks.push(c.val()));
+  tasks.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+  if (filter === 'Pending')   tasks = tasks.filter(t => t.status !== 'completed');
+  if (filter === 'Completed') tasks = tasks.filter(t => t.status === 'completed');
+  if (filter === 'High')      tasks = tasks.filter(t => t.priority === 'High');
+  if (filter === 'Medium')    tasks = tasks.filter(t => t.priority === 'Medium');
+  if (filter === 'Low')       tasks = tasks.filter(t => t.priority === 'Low');
+
+  area.innerHTML = '';
+  if (!tasks.length) { area.innerHTML = '<div class="card"><p class="muted">No tasks for this filter.</p></div>'; return; }
+
+  tasks.forEach(t => {
+    const done = t.status === 'completed';
+    const pc   = t.priority[0];
+    const div  = document.createElement('div');
+    div.className = `task-card prio-${t.priority}${done ? ' done' : ''}`;
+    div.innerHTML = `
+      <div class="task-info">
+        <h4 style="${done ? 'text-decoration:line-through' : ''}">${t.title}</h4>
+        <div class="task-meta2">
+          ${t.deadline ? '📅 ' + t.deadline : ''}
+          <span class="bp bp-${pc}">${t.priority}</span>
+          <span class="bp bp-xp">+${t.xp_reward} XP</span>
+        </div>
+      </div>
+      <div class="task-actions">
+        ${done ? '<span class="bp bp-L">✓ Done</span>' : `<button class="btn-sm" onclick="completeTask('${t.id}')">✓ Done</button>`}
+        <button class="btn-sm btn-del" onclick="deleteTask('${t.id}')">✕</button>
+      </div>`;
+    area.appendChild(div);
+  });
+}
+
+async function completeTask(id) { await fbCompleteTask(id); }
+async function deleteTask(id)   { await fbDeleteTask(id); }
+
+// ══════════════════════════════════════════════════════
+//  FOCUS TIMER
+// ══════════════════════════════════════════════════════
+function setTimer(m) { if (timerH) return; timerBase = m; timerSecs = m * 60; setText('fLen', m + ' min'); updateTimerUI(); }
+
+function updateTimerUI() {
+  const m = Math.floor(timerSecs / 60), s = timerSecs % 60;
+  setText('timerDisplay', `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+  const pct = ((timerBase * 60 - timerSecs) / (timerBase * 60) * 100).toFixed(1) + '%';
+  const ring = $('timerRing'); if (ring) ring.style.setProperty('--prog', pct);
+}
+
+function startTimer() {
+  if (timerH) return;
+  timerH = setInterval(async () => {
+    timerSecs--; updateTimerUI();
+    if (timerSecs <= 0) {
+      clearInterval(timerH); timerH = null;
+      await fbAddSession(timerBase);
+      alert('🎉 Session complete! +50 XP earned.');
+      resetTimer();
+      // Listeners will automatically refresh UI
+    }
+  }, 1000);
+}
+function pauseTimer() { clearInterval(timerH); timerH = null; }
+function resetTimer() { clearInterval(timerH); timerH = null; timerSecs = timerBase * 60; updateTimerUI(); }
+function newTip()     { setText('focusTip', rand(TIPS)); }
+
+// ══════════════════════════════════════════════════════
+//  AI
+// ══════════════════════════════════════════════════════
+function genSug() { setText('aiSug', rand(SUGS)); }
+function genMot() { setText('aiMot', rand(MOTS)); }
+
+async function genRef() {
+  const [tSnap, sSnap] = await Promise.all([tasksRef().once('value'), sessionsRef().once('value')]);
+  const tasks = []; tSnap.forEach(c => tasks.push(c.val()));
+  const done  = tasks.filter(t => t.status === 'completed').length;
+  const pend  = tasks.length - done;
+  const sessCount = sSnap.numChildren();
+  setText('aiRef',
+    `You've completed ${done} task(s) with ${pend} still pending, and finished ${sessCount} focus session(s). ` +
+    (done > 0 ? 'Great momentum — keep tackling your highest-priority work first.' : 'Start with one small task to build momentum.')
+  );
+}
+
+// ══════════════════════════════════════════════════════
+//  BADGES
+// ══════════════════════════════════════════════════════
+async function getBadges() {
+  const [tSnap, sSnap] = await Promise.all([tasksRef().once('value'), sessionsRef().once('value')]);
+  const tasks = []; tSnap.forEach(c => tasks.push(c.val()));
+  const done  = tasks.filter(t => t.status === 'completed').length;
+  const sessCount = sSnap.numChildren();
+  const xp     = CU ? CU.xp    || 0 : 0;
+  const streak = CU ? CU.streak || 0 : 0;
+  const out = [];
+  if (done >= 1)       out.push('✅ First Task');
+  if (done >= 5)       out.push('💪 Task Crusher');
+  if (done >= 10)      out.push('🏅 Task Master');
+  if (sessCount >= 1)  out.push('🎯 Focus Starter');
+  if (sessCount >= 5)  out.push('🔥 Focus Pro');
+  if (sessCount >= 10) out.push('🏆 Focus Master');
+  if (streak >= 3)     out.push('📅 3-Day Streak');
+  if (streak >= 7)     out.push('🗓 7-Day Streak');
+  if (xp >= 100)       out.push('⭐ Century Club');
+  if (xp >= 500)       out.push('💎 XP Legend');
+  return out;
+}
+
+// ══════════════════════════════════════════════════════
+//  PAGE REFRESHERS  (all read from Firebase)
+// ══════════════════════════════════════════════════════
+function updateTopbar() {
+  if (!CU) return;
+  const xp = CU.xp || 0, lv = Math.floor(xp / 100) + 1;
+  setText('tbUser', CU.username || CU.email);
+  setText('tbXP',   `⭐ ${xp} XP · Lv.${lv}`);
+}
+
+async function refreshDash() {
+  if (!CU || !UID) return;
+  const [tSnap, sSnap] = await Promise.all([tasksRef().once('value'), sessionsRef().once('value')]);
+  const tasks = []; tSnap.forEach(c => tasks.push(c.val()));
+  const done  = tasks.filter(t => t.status === 'completed').length;
+  const total = tasks.length;
+  const xp    = CU.xp || 0, prog = xp % 100, lv = Math.floor(xp / 100) + 1;
+
+  setText('dashWelcome', `Welcome back, ${CU.username || CU.email} 👋`);
+  updateTopbar();
+  setText('d-xp', xp); setText('d-level', lv); setText('d-tasks', done); setText('d-streak', CU.streak || 0);
+  setText('xpLevel', lv); setText('xpCur', prog + ' XP'); setText('xpNext', (100 - prog) + ' XP to next level');
+  setW('xpFill', prog + '%');
+  setText('dashTip', rand(SUGS));
+  setText('wTasks', done); setText('wSessions', sSnap.numChildren()); setText('wXP', xp);
+  setText('wRate',  total === 0 ? '0%' : Math.round(done / total * 100) + '%');
+
+  const preview = $('dashTaskList');
+  if (preview) {
+    const pend = tasks.filter(t => t.status !== 'completed').slice(0, 4);
+    preview.innerHTML = pend.length
+      ? pend.map(t => `<li>${t.title} <span class="bp bp-${t.priority[0]}" style="font-size:11px">${t.priority}</span></li>`).join('')
+      : '<li style="color:var(--green)">All tasks done! 🎉</li>';
+  }
+}
+
+async function refreshProgress() {
+  if (!CU || !UID) return;
+  const [tSnap, sSnap] = await Promise.all([tasksRef().once('value'), sessionsRef().once('value')]);
+  const tasks = []; tSnap.forEach(c => tasks.push(c.val()));
+  const done = tasks.filter(t => t.status === 'completed').length;
+  const pend = tasks.filter(t => t.status !== 'completed').length;
+  const xp   = CU.xp || 0, prog = xp % 100, lv = Math.floor(xp / 100) + 1;
+
+  setText('pLevel', lv); setText('pXP', xp); setText('pXpCur', prog + ' XP');
+  setW('pXpFill', prog + '%');
+  setText('pStreak', CU.streak || 0); setText('pStreak2', CU.streak || 0);
+  setText('pTasks', done); setText('pPending', pend); setText('pSessions', sSnap.numChildren());
+
+  const grid = $('badgeGrid');
+  if (grid) {
+    const b = await getBadges();
+    grid.innerHTML = b.length
+      ? b.map(x => `<span class="eb">${x}</span>`).join('')
+      : '<span class="muted">Complete tasks and sessions to earn badges.</span>';
+  }
+}
+
+async function refreshFocus() {
+  if (!CU || !UID) return;
+  const sSnap = await sessionsRef().once('value');
+  setText('fLevel',    Math.floor((CU.xp || 0) / 100) + 1);
+  setText('fSessions', sSnap.numChildren());
+  updateTimerUI();
+  if (!$('focusTip').textContent) newTip();
+}
+
+function refreshAI() {
+  if (!$('aiSug').textContent) genSug();
+  if (!$('aiMot').textContent) genMot();
+  genRef();
+}
+
+async function refreshSummary() {
+  if (!CU || !UID) return;
+  const [tSnap, sSnap] = await Promise.all([tasksRef().once('value'), sessionsRef().once('value')]);
+  const tasks = []; tSnap.forEach(c => tasks.push(c.val()));
+  const done  = tasks.filter(t => t.status === 'completed').length;
+  const total = tasks.length;
+  const prod  = total === 0 ? 0 : Math.round(done / total * 100);
+  const xp    = CU.xp || 0;
+
+  setText('sTasks', done); setText('sSessions', sSnap.numChildren()); setText('sXP', xp);
+  setText('sBestDay', `🔥 Best streak: ${CU.streak || 0} day(s)`);
+  setText('sScore',   `📊 Productivity Score: ${prod}%`);
+  setText('sAi',
+    `This week you completed ${done} task(s), finished ${sSnap.numChildren()} focus session(s), and earned ${xp} total XP. ` +
+    `Your streak is ${CU.streak || 0} day(s). ` +
+    (prod >= 70 ? 'Outstanding consistency — keep prioritizing important tasks early.'
+                : 'Momentum is building. Focus on a few high-priority tasks to boost your score.')
+  );
+}
+
+function refreshPage(p) {
+  if (p === 'dashboard') refreshDash();
+  if (p === 'tasks')     renderTasks();
+  if (p === 'focus')     refreshFocus();
+  if (p === 'progress')  refreshProgress();
+  if (p === 'ai')        refreshAI();
+  if (p === 'summary')   refreshSummary();
+}
+function refreshAll() { refreshDash(); renderTasks(); refreshFocus(); refreshProgress(); refreshAI(); refreshSummary(); }
+
+// ══════════════════════════════════════════════════════
+//  THEME
+// ══════════════════════════════════════════════════════
+function toggleTheme() {
+  const d = document.body.classList.toggle('dark');
+  localStorage.setItem('aimfocus_theme', d ? 'dark' : 'light');
+}
+function applyTheme() {
+  if (localStorage.getItem('aimfocus_theme') === 'dark') document.body.classList.add('dark');
+}
+
+// ══════════════════════════════════════════════════════
+//  EXPORT DB  (kept for convenience — downloads JSON now)
+// ══════════════════════════════════════════════════════
+async function exportDB() {
+  const [pSnap, tSnap, sSnap] = await Promise.all([
+    profileRef().once('value'),
+    tasksRef().once('value'),
+    sessionsRef().once('value')
+  ]);
+  const data = {
+    profile:  pSnap.val(),
+    tasks:    tSnap.val(),
+    sessions: sSnap.val(),
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'aimfocus-export.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════
+function $(id)         { return document.getElementById(id); }
+function setText(id,v) { const e=$(id); if(e) e.textContent=v; }
+function setW(id,v)    { const e=$(id); if(e) e.style.width=v; }
+function showLoading(show) { $('loadingOverlay').classList.toggle('hidden', !show); }
+
+// ══════════════════════════════════════════════════════
+//  AUTO-SAVE on tab close / logout
+// ══════════════════════════════════════════════════════
+window.addEventListener('beforeunload', () => {
+  if (UID && CU) saveProgress(); // best-effort (sync)
+});
+
+// ══════════════════════════════════════════════════════
+//  BOOT  — Firebase Auth state observer drives everything
+// ══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  applyTheme();
+
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      // ── Logged in ────────────────────────────────────
+      UID = user.uid;
+      localStorage.setItem('aimfocus_uid', UID);   // session only
+
+      await ensureProfile(user.email);             // create profile if new user
+
+      // Load profile once so CU is ready before showing app
+      const snap = await profileRef().once('value');
+      CU = snap.val();
+
+      detachListeners();    // clear any stale listeners
+      attachListeners();    // attach real-time listeners
+
+      showLoading(false);
+      showApp();
+    } else {
+      // ── Logged out ───────────────────────────────────
+      UID = null; CU = null;
+      localStorage.removeItem('aimfocus_uid');
+      showLoading(false);
+      $('loginRoot').classList.remove('hidden');
+      $('appRoot').classList.add('hidden');
+    }
+  });
+});
+</script>
+</body>
+</html>
